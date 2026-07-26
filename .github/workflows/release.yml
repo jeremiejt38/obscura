@@ -24,7 +24,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install . pyinstaller
-      - run: pyinstaller --onefile --name ${{ matrix.artifact }} -m obscura
+      - run: pyinstaller --onefile --name ${{ matrix.artifact }} scripts/obscura_cli.py
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
