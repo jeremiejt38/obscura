@@ -4,24 +4,28 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 from PIL import Image
 
 from .clipboard import has_clipboard_tool, read_image_from_clipboard, write_image_to_clipboard
-from .redactor import redact_image
+from .config import AppConfig
+from .engine import redact
 from .watcher import watch_directory
 
 
-def process_image(image: Image.Image, mode: str = "black") -> tuple:
-    redacted, count = redact_image(image, mode=mode)
-    return redacted, count
+def process_image(image: Image.Image, mode: str = "blur", config: Optional[AppConfig] = None) -> tuple:
+    settings = config or AppConfig(redaction_mode=mode)
+    result = redact(image, settings)
+    return result.image, result.count
 
 
-def process_file(path: str, copy_to_clipboard: bool = False, suffix: str = "_redacted", mode: str = "black") -> str:
+def process_file(path: str, copy_to_clipboard: bool = False, suffix: str = "-obscura", mode: str = "blur") -> str:
     image = Image.open(path).convert("RGB")
     redacted, count = process_image(image, mode=mode)
     input_path = Path(path)
     output_path = input_path.parent / f"{input_path.stem}{suffix}{input_path.suffix}"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     redacted.save(output_path)
     print(f"[✓] Redacted {count} sensitive region(s) -> {output_path}")
 
@@ -32,7 +36,7 @@ def process_file(path: str, copy_to_clipboard: bool = False, suffix: str = "_red
     return output_path
 
 
-def clipboard_mode(poll_interval: float = 0.5, mode: str = "black") -> None:
+def clipboard_mode(poll_interval: float = 0.5, mode: str = "blur") -> None:
     if not has_clipboard_tool():
         print(
             "[ERROR] No clipboard tool found. Install xclip (X11) or wl-clipboard (Wayland).",
@@ -68,8 +72,8 @@ def clipboard_mode(poll_interval: float = 0.5, mode: str = "black") -> None:
 def directory_mode(
     directory: str,
     copy_to_clipboard: bool = False,
-    suffix: str = "_redacted",
-    mode: str = "black",
+    suffix: str = "-obscura",
+    mode: str = "blur",
 ) -> None:
     if not os.path.isdir(directory):
         print(f"[ERROR] Directory does not exist: {directory}", file=sys.stderr)
@@ -108,8 +112,8 @@ def main():
     )
     parser.add_argument(
         "--suffix",
-        default="_redacted",
-        help="Suffix for redacted files (default: _redacted).",
+        default="-obscura",
+        help="Suffix for redacted files (default: -obscura)."
     )
     parser.add_argument(
         "--interval",
@@ -122,8 +126,15 @@ def main():
         dest="mode",
         action="store_const",
         const="blur",
-        default="black",
+        default="blur",
         help="Use Gaussian blur instead of a black rectangle for redaction.",
+    )
+    parser.add_argument(
+        "--pixelate",
+        dest="mode",
+        action="store_const",
+        const="pixelate",
+        help="Use pixelation instead of a black rectangle for redaction.",
     )
     args = parser.parse_args()
 

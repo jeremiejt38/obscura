@@ -56,11 +56,17 @@ class ScreenshotHandler(FileSystemEventHandler):
 def watch_directory(
     directory: str,
     callback: Callable[[str], None],
-    ignored_stem_suffix: str = "_redacted",
+    ignored_stem_suffix: str = "-obscura",
+    extensions: tuple = (".png", ".jpg", ".jpeg", ".webp"),
+    recursive: bool = True,
 ) -> None:
-    handler = ScreenshotHandler(callback, ignored_stem_suffix=ignored_stem_suffix)
+    handler = ScreenshotHandler(
+        callback,
+        extensions=extensions,
+        ignored_stem_suffix=ignored_stem_suffix,
+    )
     observer = Observer()
-    observer.schedule(handler, directory, recursive=False)
+    observer.schedule(handler, directory, recursive=recursive)
     observer.start()
     try:
         while True:

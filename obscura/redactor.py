@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 from PIL import Image, ImageDraw, ImageFilter
 import pytesseract
 
@@ -112,15 +112,22 @@ SENSITIVE_PATTERNS: List[Tuple[re.Pattern, str]] = [
 ]
 
 
-def extract_words(image: Image.Image) -> List[Dict[str, Any]]:
-    data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+def extract_words(
+    image: Image.Image,
+    languages: Optional[str] = None,
+    confidence: int = 10,
+) -> List[Dict[str, Any]]:
+    kwargs: Dict[str, Any] = {"output_type": pytesseract.Output.DICT}
+    if languages:
+        kwargs["lang"] = languages
+    data = pytesseract.image_to_data(image, **kwargs)
     words: List[Dict[str, Any]] = []
     for i in range(len(data["text"])):
         text = data["text"][i].strip()
         if not text:
             continue
         conf = int(data["conf"][i])
-        if conf < 10:
+        if conf < confidence:
             continue
         words.append(
             {
@@ -154,8 +161,13 @@ def group_words_by_line(words: List[Dict[str, Any]]) -> List[List[Dict[str, Any]
     return [sorted(lines_map[k], key=lambda w: w["left"]) for k in sorted_keys]
 
 
-def find_sensitive_boxes(line_words: List[Dict[str, Any]]) -> List[Box]:
-    regions: List[Box] = []
+def find_sensitive_boxes(
+    line_words: List[Dict[str, Any]],
+    patterns: Optional[List[Tuple[re.Pattern, str]]] = None,
+    include_categories: bool = False,
+) -> List[Any]:
+    regions: List[Any] = []
+    patterns = patterns if patterns is not None else SENSITIVE_PATTERNS
     n = len(line_words)
     if n == 0:
         return regions
@@ -169,7 +181,7 @@ def find_sensitive_boxes(line_words: List[Dict[str, Any]]) -> List[Box]:
         char_to_word.pop()  # remove trailing space mapping
 
     matched_patterns = set()
-    for pattern, _label in SENSITIVE_PATTERNS:
+    for pattern, label in patterns:
         for match in pattern.finditer(joined):
             matched_patterns.add(pattern)
             start_char, end_char = match.span()
@@ -181,19 +193,19 @@ def find_sensitive_boxes(line_words: List[Dict[str, Any]]) -> List[Box]:
             box = line_words[start_word_idx]["box"]
             for idx in range(start_word_idx + 1, end_word_idx + 1):
                 box = box.union(line_words[idx]["box"])
-            regions.append(box)
+            regions.append((box, label) if include_categories else box)
 
     # Fallback: sliding window with spaces removed, useful for tokens split by OCR.
     for window_size in range(1, min(8, n + 1)):
         for start in range(n - window_size + 1):
             candidate_words = line_words[start : start + window_size]
             compact = "".join(w["text"] for w in candidate_words)
-            for pattern, _label in SENSITIVE_PATTERNS:
+            for pattern, label in patterns:
                 if pattern not in matched_patterns and pattern.search(compact):
                     box = candidate_words[0]["box"]
                     for w in candidate_words[1:]:
                         box = box.union(w["box"])
-                    regions.append(box)
+                    regions.append((box, label) if include_categories else box)
 
     return regions
 
