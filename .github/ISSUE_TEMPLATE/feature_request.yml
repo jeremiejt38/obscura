@@ -1,0 +1,26 @@
+name: Feature request
+description: Propose an improvement
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy impact
+      description: "Explain how the proposal preserves local-only processing."
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

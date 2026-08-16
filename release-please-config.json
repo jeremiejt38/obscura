@@ -1,0 +1,11 @@
+{
+  "packages": {
+    ".": {
+      "package-name": "obscura",
+      "release-type": "python",
+      "extra-files": [
+        "obscura/__init__.py"
+      ]
+    }
+  }
+}
