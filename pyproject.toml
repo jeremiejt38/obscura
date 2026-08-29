@@ -38,6 +38,9 @@ obscura-desktop = "obscura.desktop:main"
 Homepage = "https://github.com/jeremiejt38/Obscura"
 Repository = "https://github.com/jeremiejt38/Obscura"
 
+[dependency-groups]
+dev = ["pytest>=7.0.0"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
