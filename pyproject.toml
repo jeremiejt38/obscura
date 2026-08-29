@@ -7,7 +7,7 @@ name = "obscura"
 version = "0.2.0"
 description = "Offline screenshot redaction using local OCR"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Jeremie" }]
 keywords = ["privacy", "ocr", "redaction", "screenshot", "offline"]
