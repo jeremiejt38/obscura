@@ -1,3 +1,4 @@
+import pytest
 from PIL import Image
 
 from obscura.redactor import Box, find_sensitive_boxes, merge_overlapping_boxes, redact_image
@@ -26,3 +27,19 @@ def test_redact_image_applies_black_mask(monkeypatch):
 
     assert count == 1
     assert image.getpixel((10, 10)) == (0, 0, 0)
+
+
+class TestNewPatterns:
+    @pytest.mark.parametrize("text", [
+        "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abc.def",
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMock1234 user@host",
+        "server at 203.0.113.7 is down",
+        "https://discord.com/api/webhooks/123/abc",
+    ])
+    def test_detects_new_categories(self, text):
+        from obscura.redactor import SENSITIVE_PATTERNS
+        assert any(p.search(text) for p, _ in SENSITIVE_PATTERNS)
+
+    def test_no_false_positive_on_plain_text(self):
+        from obscura.redactor import SENSITIVE_PATTERNS
+        assert not any(p.search("The quick brown fox 1.2 is fine") for p, _ in SENSITIVE_PATTERNS)

@@ -109,6 +109,20 @@ SENSITIVE_PATTERNS: List[Tuple[re.Pattern, str]] = [
         re.compile(r"-----BEGIN (?:RSA |OPENSSH |DSA |EC |PGP )?PRIVATE KEY-----"),
         "private_key",
     ),
+    # Bearer tokens (Authorization headers)
+    (re.compile(r"\bBearer\s+[A-Za-z0-9._~+/-]{10,}={0,2}\b"), "bearer_token"),
+    # SSH public keys
+    (
+        re.compile(r"\b(?:ssh-(?:rsa|ed25519|dss)|ecdsa-sha2-nistp(?:256|384|521))\s+[A-Za-z0-9+/]{20,}={0,2}\b"),
+        "ssh_key",
+    ),
+    # IPv4 addresses (non RFC1918 excluded at review time — flag all)
+    (re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"), "ip_address"),
+    # Slack / Discord / generic webhook URLs
+    (
+        re.compile(r"https://hooks\.(?:slack|discord)\.com/\S+|https://discord(?:app)?\.com/api/webhooks/\S+"),
+        "webhook_url",
+    ),
 ]
 
 
