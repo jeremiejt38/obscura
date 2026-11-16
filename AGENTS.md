@@ -13,4 +13,4 @@
 - Keep `pyproject.toml` as the authoritative project version. Keep detailed release history in `CHANGELOG.md` and GitHub Releases.
 - Keep `README.md` aligned with `docs/README_TEMPLATE.md` whenever behavior, setup, support or roadmap changes.
 - Preserve `CONTRIBUTING.md` and `SECURITY.md` for public collaboration and vulnerability reporting. Never commit private screenshots, secrets or generated local outputs.
-- Talos delegation is enabled (re-enabled by the maintainer on 2026-08-05). Submit only isolated, well-scoped sandboxed jobs with a clear objective and a `validate_cmd` (pytest/lint) when possible. Talos never modifies the repository directly; review every diff before integration, and never merge a Talos result without human validation.
+- Talos delegation is disabled until the maintainer explicitly re-enables it (Talos is currently frozen/in maintenance). When enabled: submit only isolated, well-scoped sandboxed jobs with a clear objective and a `validate_cmd` (pytest/lint) when possible. Talos never modifies the repository directly; review every diff before integration, and never merge a Talos result without human validation.
