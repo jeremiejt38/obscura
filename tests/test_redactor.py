@@ -35,6 +35,11 @@ class TestNewPatterns:
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMock1234 user@host",
         "server at 203.0.113.7 is down",
         "https://discord.com/api/webhooks/123/abc",
+        "IBAN: FR1420041010050500013M02606",
+        "contact au 06 12 34 56 78",
+        "card 4111 1111 1111 1111",
+        "key sk-AbCdEf1234567890",
+        "-----BEGIN PRIVATE KEY-----",
     ])
     def test_detects_new_categories(self, text):
         from obscura.redactor import SENSITIVE_PATTERNS
