@@ -217,3 +217,25 @@ For security vulnerabilities, do not open a public issue; read [SECURITY.md](SEC
 ## License
 
 [MIT](LICENSE)
+
+
+## Detection coverage
+
+### Detected
+
+Email, IBAN, MAC, French phone numbers, JWT, API keys (`sk-`, `ghp_`, `github_pat_`, `glpat-`, `xox-`, `hf_`, `npm_`, `pypi-`, Stripe, Google `AIza`, SendGrid `SG.`), AWS keys, credit cards (Luhn-validated), SSH keys, private key blocks, bearer tokens, IPv4/IPv6 endpoints, `host:port`, Slack/Discord webhooks, URLs with embedded credentials, base64 blobs, French SSN.
+
+### Custom rules (custom_rules in config)
+
+Users can add their own patterns via the "Custom keywords" field (semicolon-separated) or `custom_rules` in the config file. Each rule is either a literal string or a regex (`is_regex: true`) — e.g. internal hostnames/domains. Disabled rules are skipped; invalid regexes are ignored. Rules appear as `custom:<name>` detections.
+
+### Not detected (known limits)
+
+- Secrets with no recognizable pattern (arbitrary passwords, high-entropy strings).
+- Filenames shown in window titles or dialogs.
+- SSH keys displayed without the `ssh-`/`ecdsa-` prefix line.
+- Passwords already masked by a form field (••••) — nothing to redact.
+- Content outside the captured image (scroll regions, other monitors).
+- Handwritten or heavily stylized text the OCR cannot read.
+
+Requires Tesseract OCR 5.x with `fra` and `eng` language packs.
