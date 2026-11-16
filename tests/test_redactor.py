@@ -48,3 +48,58 @@ class TestNewPatterns:
     def test_no_false_positive_on_plain_text(self):
         from obscura.redactor import SENSITIVE_PATTERNS
         assert not any(p.search("The quick brown fox 1.2 is fine") for p, _ in SENSITIVE_PATTERNS)
+
+
+class TestExtendedPatterns:
+    @pytest.mark.parametrize("text", [
+        "token github_pat_11ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+        "gitlab glpat-AbCdEfGhIjKlMnOpQrSt",
+        "slack xoxb-1234567890-abcdefghij",
+        "hf_AbCdEfGhIjKlMnOpQrStUvWxYz0123",
+        "stripe " + "sk" + "_live_" + "0" * 20,
+        "google " + "AI" + "za" + "0" * 35,
+        "host 2001:0db8:85a3:0000:0000:8a2e:0370:7334 up",
+        "host ::1 loopback",
+        "url https://admin:s3cret@example.com/path",
+    ])
+    def test_detects_extended_patterns(self, text):
+        from obscura.redactor import SENSITIVE_PATTERNS
+        assert any(p.search(text) for p, _ in SENSITIVE_PATTERNS), text
+
+    def test_luhn_rejects_invalid_card(self):
+        boxes = find_sensitive_boxes([word("card", 0, 0, 40, 10), word("1234567890123456", 50, 0, 160, 10)])
+        assert not any(getattr(b, "label", "") == "credit_card" for b in boxes)
+
+    def test_luhn_accepts_valid_card(self):
+        boxes = find_sensitive_boxes([word("card", 0, 0, 40, 10), word("4539578763621486", 50, 0, 160, 10)])
+        assert len(boxes) >= 1
+
+
+class TestCustomRules:
+    def test_literal_rule_compiles(self):
+        from obscura.config import AppConfig, CustomRule
+        from obscura.engine import _patterns
+        config = AppConfig(custom_rules=[CustomRule(name="internal", value="internal.example.invalid")])
+        labels = [label for _, label in _patterns(config)]
+        assert "custom:internal" in labels
+
+    def test_regex_rule_compiles(self):
+        import re
+        from obscura.config import AppConfig, CustomRule
+        from obscura.engine import _patterns
+        config = AppConfig(custom_rules=[CustomRule(name="dom", value=r"\.internal\.lan$", is_regex=True)])
+        patterns = _patterns(config)
+        pattern, label = next(item for item in patterns if item[1] == "custom:dom")
+        assert pattern.search("host.internal.lan")
+
+    def test_disabled_rule_skipped(self):
+        from obscura.config import AppConfig, CustomRule
+        from obscura.engine import _patterns
+        config = AppConfig(custom_rules=[CustomRule(name="off", value="x", enabled=False)])
+        assert not any(label == "custom:off" for _, label in _patterns(config))
+
+    def test_invalid_regex_skipped(self):
+        from obscura.config import AppConfig, CustomRule
+        from obscura.engine import _patterns
+        config = AppConfig(custom_rules=[CustomRule(name="bad", value="[", is_regex=True)])
+        assert not any(label == "custom:bad" for _, label in _patterns(config))

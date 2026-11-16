@@ -123,7 +123,42 @@ SENSITIVE_PATTERNS: List[Tuple[re.Pattern, str]] = [
         re.compile(r"https://hooks\.(?:slack|discord)\.com/\S+|https://discord(?:app)?\.com/api/webhooks/\S+"),
         "webhook_url",
     ),
+    # Extended API token families (FR-OBS-03c)
+    (re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b"), "github_token"),
+    (re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b"), "api_key"),
+    (re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"), "api_key"),
+    (re.compile(r"\bhf_[A-Za-z0-9]{30,}\b"), "api_key"),
+    (re.compile(r"\bnpm_[A-Za-z0-9]{36}\b"), "api_key"),
+    (re.compile(r"\bpypi-[A-Za-z0-9_-]{40,}\b"), "api_key"),
+    (re.compile(r"\b[sr]k_live_[A-Za-z0-9]{16,}\b"), "api_key"),
+    (re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"), "api_key"),
+    (re.compile(r"\bSG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}\b"), "api_key"),
+    # IPv6 addresses (FR-OBS-03c) — mapped on "endpoint" like host:port
+    (
+        re.compile(
+            r"\b(?:[0-9A-Fa-f]{1,4}:){2,7}[0-9A-Fa-f]{1,4}\b|\b(?:[0-9A-Fa-f]{1,4}:){1,7}:\b|(?<![0-9A-Fa-f:]):{1,2}(?:[0-9A-Fa-f]{1,4}:){0,5}[0-9A-Fa-f]{1,4}\b"
+        ),
+        "endpoint",
+    ),
+    # URLs with embedded credentials (FR-OBS-03c)
+    (
+        re.compile(r"\b[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/:]+:[^\s@]+@[^\s]+"),
+        "credential",
+    ),
 ]
+
+
+def _luhn_ok(digits: str) -> bool:
+    """Luhn checksum for credit-card-like digit strings (FR-OBS-03c)."""
+    total = 0
+    for i, ch in enumerate(reversed(digits)):
+        d = int(ch)
+        if i % 2 == 1:
+            d *= 2
+            if d > 9:
+                d -= 9
+        total += d
+    return total % 10 == 0
 
 
 def extract_words(
@@ -197,6 +232,8 @@ def find_sensitive_boxes(
     matched_patterns = set()
     for pattern, label in patterns:
         for match in pattern.finditer(joined):
+            if label == "credit_card" and not _luhn_ok(re.sub(r"\D", "", match.group(0))):
+                continue
             matched_patterns.add(pattern)
             start_char, end_char = match.span()
             # end_char is exclusive; clamp to valid indices.
